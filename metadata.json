@@ -1,0 +1,8 @@
+{
+  "name": "RoofAI Pro",
+  "description": "The autonomous business operating system for the roofing and restoration industry. Features 'Zero-Click' AI, AR Roof Scans, Supplement Intelligence, and a Full-Stack Virtual Staff powered by the ADK.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}

@@ -76,9 +76,9 @@ export const TOOLS: Tool[] = [
     icon: MicIcon,
   },
   {
-    id: 'company-profile',
-    name: 'About Nimbus',
-    description: 'Nimbus General Contractors: Field Services P&L & Operating Model.',
+    id: 'about',
+    name: 'About Us',
+    description: 'Investor Relations: Mission, Market, and Technology Stack.',
     icon: InfoIcon,
   },
 ];

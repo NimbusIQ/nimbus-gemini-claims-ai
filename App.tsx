@@ -29,7 +29,7 @@ const App: React.FC = () => {
 
   const renderActiveTool = () => {
     switch (activeTool.id) {
-      case 'company-profile':
+      case 'about':
         return <CompanyProfile onNavigate={handleNavigate} />;
       case 'command-center':
         return <CommandCenter />;
@@ -42,7 +42,7 @@ const App: React.FC = () => {
       case 'adk-workbench':
         return <AdkWorkbench />;
       case 'xactimate-bridge':
-        return <XactimateBridge />;
+        return <XactimateBridge onNavigate={handleNavigate} />;
       case 'crm-suite':
         return <SheetifyCRM />;
       case 'customer-service':

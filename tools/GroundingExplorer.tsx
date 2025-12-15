@@ -1,22 +1,35 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GoogleGenAI, type GroundingChunk } from '@google/genai';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
+import { SearchIcon, LinkIcon, ShareIcon } from '../components/Icons';
+
+type Tab = 'content' | 'backlinks' | 'social';
 
 const MarketAuthority: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<Tab>('content');
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState('');
   const [sources, setSources] = useState<GroundingChunk[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const presets = [
-    "Find recent hail reports in Plano, TX and write a 'Zero-Click' optimized landing page intro.",
-    "What are the top rated roofing competitors in Dallas according to Google Maps? List their weaknesses based on reviews.",
-    "Search for 'emergency tarping services' trends in my area and suggest keywords."
-  ];
+  const presets = {
+    content: [
+        "Find recent hail reports in Plano, TX and write a 'Zero-Click' optimized landing page intro.",
+        "Search for 'emergency tarping services' trends in my area and suggest keywords."
+    ],
+    backlinks: [
+        "Find 5 high-authority roofing or home improvement blogs accepting guest posts.",
+        "Draft a link exchange outreach email to a local real estate agency."
+    ],
+    social: [
+        "Create a week of LinkedIn posts about the benefits of Impact Resistant Shingles.",
+        "Write a Facebook post regarding the recent storm in McKinney, TX using urgency."
+    ]
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -32,9 +45,14 @@ const MarketAuthority: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       
+      let systemInstruction = "";
+      if (activeTab === 'content') systemInstruction = "Act as a Geo-Local SEO expert and Content Strategist.";
+      if (activeTab === 'backlinks') systemInstruction = "Act as an SEO Off-Page Specialist and Link Building Strategist. Focus on high domain authority opportunities.";
+      if (activeTab === 'social') systemInstruction = "Act as a Social Media Manager. Create engaging, platform-specific content.";
+
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Act as a Geo-Local SEO expert and Content Strategist for a roofing company. ${prompt}`,
+        contents: `${systemInstruction} ${prompt}`,
         config: {
              tools: [{ googleSearch: {} }, {googleMaps: {}}],
         }
@@ -53,12 +71,31 @@ const MarketAuthority: React.FC = () => {
   return (
     <div className="space-y-6">
       <Card>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-700/50 bg-gray-800/50 rounded-t-xl px-2">
+            <div className="flex space-x-2 overflow-x-auto">
+                <button onClick={() => setActiveTab('content')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'content' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                    <SearchIcon className="w-4 h-4 mr-2"/> SEO Content
+                </button>
+                <button onClick={() => setActiveTab('backlinks')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'backlinks' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                    <LinkIcon className="w-4 h-4 mr-2"/> Backlink Exchange
+                </button>
+                <button onClick={() => setActiveTab('social')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'social' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                    <ShareIcon className="w-4 h-4 mr-2"/> Social Task Force
+                </button>
+            </div>
+        </div>
+
         <div className="p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-white">Geo-Triggered Content Engine</h3>
-          <p className="text-sm text-gray-400">Dominate local search rankings when severe weather hits.</p>
+          <h3 className="text-lg font-semibold text-white capitalize">{activeTab.replace('-', ' ')} Strategy</h3>
+          <p className="text-sm text-gray-400">
+            {activeTab === 'content' && "Dominate local search rankings when severe weather hits."}
+            {activeTab === 'backlinks' && "Build domain authority through strategic link exchanges and guest posts."}
+            {activeTab === 'social' && "Automate your social media calendar with high-engagement posts."}
+          </p>
           
            <div className="flex flex-col gap-2">
-            {presets.map((p, i) => (
+            {presets[activeTab].map((p, i) => (
                 <button key={i} onClick={() => setPrompt(p)} className="text-left text-sm bg-gray-800 hover:bg-gray-700 p-2 rounded border border-gray-600 text-gray-300">
                     {p}
                 </button>
@@ -70,13 +107,13 @@ const MarketAuthority: React.FC = () => {
               rows={4}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., Identify storm dates for Zip Code 75024 and draft a 'Storm Damage Repair' guide."
+              placeholder="Describe your goal..."
               className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
           </div>
           <div className="flex justify-end">
             <Button onClick={handleGenerate} isLoading={isLoading}>
-              Generate Authority Content
+              Execute Strategy
             </Button>
           </div>
         </div>

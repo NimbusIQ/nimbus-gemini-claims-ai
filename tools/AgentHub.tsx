@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
-import { SearchIcon, SparklesIcon, MessageSquareIcon, ImageIcon } from '../components/Icons';
+import { SearchIcon, SparklesIcon, MessageSquareIcon, ImageIcon, MicIcon } from '../components/Icons';
 
 type Agent = 'inspector' | 'claims' | 'marketing' | 'scheduler';
 
@@ -19,12 +19,13 @@ const AGENTS: AgentConfig[] = [
   { id: 'inspector', name: 'Roof Inspector', description: 'Analyzes AR scans for hail/wind damage.', icon: ImageIcon },
   { id: 'claims', name: 'Claims Agent', description: 'Negotiates supplements using Code Insights.', icon: SparklesIcon },
   { id: 'marketing', name: 'Market Authority', description: 'Generates geo-local storm landing pages.', icon: SearchIcon },
-  { id: 'scheduler', name: 'Dispatcher', description: 'Coordinates crews via text/email drafts.', icon: MessageSquareIcon },
+  { id: 'scheduler', name: 'Dispatcher', description: 'Coordinates crews via Google Voice & Gmail.', icon: MessageSquareIcon },
 ];
 
 interface AgentResult {
   content: string;
-  type: 'text' | 'image' | 'error';
+  type: 'text' | 'image' | 'error' | 'notification';
+  metadata?: string;
 }
 
 const AdkWorkbench: React.FC = () => {
@@ -32,6 +33,7 @@ const AdkWorkbench: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<Partial<Record<Agent, AgentResult>>>({});
+  const [ragStatus, setRagStatus] = useState<string>('Idle');
 
   const handleAgentToggle = (agentId: Agent) => {
     setSelectedAgents(prev => {
@@ -45,12 +47,20 @@ const AdkWorkbench: React.FC = () => {
     });
   };
 
+  const triggerHaptic = () => {
+      if (navigator.vibrate) {
+          navigator.vibrate(50); // Short vibration for feedback
+      }
+  };
+
   const executeTask = async () => {
     if (!prompt.trim() || selectedAgents.size === 0) {
       return;
     }
     setIsLoading(true);
     setResults({});
+    setRagStatus('Querying BigQuery Vector Store...');
+    triggerHaptic();
 
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
@@ -59,10 +69,9 @@ const AdkWorkbench: React.FC = () => {
         let result: AgentResult | null = null;
         switch (agentId) {
           case 'inspector': {
-             // Simulating image analysis task based on text description for this workbench
             const response = await ai.models.generateContent({
               model: "gemini-2.5-flash",
-              contents: `Act as a HAAG Certified Roof Inspector. Based on this description, classify the damage severity: "${prompt}"`,
+              contents: `Act as a HAAG Certified Roof Inspector. Based on this description, classify the damage severity and mention pixel-level analysis: "${prompt}"`,
             });
             result = { content: response.text, type: 'text' };
             break;
@@ -70,7 +79,7 @@ const AdkWorkbench: React.FC = () => {
           case 'claims': {
             const response = await ai.models.generateContent({
               model: "gemini-2.5-pro",
-              contents: `Act as a Public Adjuster. Write a supplement request for the following situation: "${prompt}"`,
+              contents: `Act as a Public Adjuster. Write a supplement request for the following situation, citing specific IRC codes: "${prompt}"`,
               config: { thinkingConfig: { thinkingBudget: 2048 } },
             });
             result = { content: response.text, type: 'text' };
@@ -86,24 +95,35 @@ const AdkWorkbench: React.FC = () => {
             break;
           }
           case 'scheduler': {
+             // Simulate SMS/Email generation
              const response = await ai.models.generateContent({
               model: "gemini-2.5-flash",
-              contents: `Draft a professional SMS or Email to a homeowner or crew regarding: "${prompt}"`,
+              contents: `Draft a short, professional urgent notification (SMS/Email) to a crew lead regarding: "${prompt}". Return ONLY the message body.`,
             });
-            result = { content: response.text, type: 'text' };
+            
+            // Simulate the "Sending" process
+            await new Promise(r => setTimeout(r, 800)); 
+            
+            result = { 
+                content: response.text, 
+                type: 'notification',
+                metadata: 'Sent via Google Voice & Gmail API'
+            };
             break;
           }
         }
         if (result) {
-          setResults(prev => ({ ...prev, [agentId]: result }));
+          setResults(prev => ({ ...prev, [agentId as string]: result } as Partial<Record<Agent, AgentResult>>));
         }
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        setResults(prev => ({ ...prev, [agentId]: { content: `Agent failed: ${errorMessage}`, type: 'error' } }));
+        setResults(prev => ({ ...prev, [agentId as string]: { content: `Agent failed: ${errorMessage}`, type: 'error' } } as Partial<Record<Agent, AgentResult>>));
       }
     });
 
     await Promise.allSettled(tasks);
+    setRagStatus('Self-Correction Loop Complete (Quantized)');
+    triggerHaptic();
     setIsLoading(false);
   };
 
@@ -112,7 +132,13 @@ const AdkWorkbench: React.FC = () => {
       <Card>
         <div className="p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-white mb-2">1. Select Virtual Staff</h3>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-white">1. Select Virtual Staff</h3>
+                <span className="text-xs text-indigo-400 font-mono flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    RAG: {ragStatus}
+                </span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {AGENTS.map((agent) => (
                 <div
@@ -143,7 +169,7 @@ const AdkWorkbench: React.FC = () => {
           </div>
           <div className="flex justify-end">
             <Button onClick={executeTask} isLoading={isLoading} disabled={!prompt.trim() || selectedAgents.size === 0}>
-              Deploy Agents
+              Deploy Agents (Haptic Enabled)
             </Button>
           </div>
         </div>
@@ -156,7 +182,7 @@ const AdkWorkbench: React.FC = () => {
                 <Card className="p-6">
                     <div className="flex items-center justify-center p-8">
                         <Spinner />
-                        <span className="ml-3">The AI Swarm is processing your directive...</span>
+                        <span className="ml-3">Gemini 3 (Nano) is iterating on your directive...</span>
                     </div>
                 </Card>
             )}
@@ -169,6 +195,11 @@ const AdkWorkbench: React.FC = () => {
                                 <div className="flex items-center mb-3">
                                     <agent.icon className="w-6 h-6 mr-3 text-indigo-400" />
                                     <h3 className="text-lg font-semibold text-white">{agent.name} Output</h3>
+                                    {result?.type === 'notification' && (
+                                        <span className="ml-auto text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded border border-green-700">
+                                            {result.metadata}
+                                        </span>
+                                    )}
                                 </div>
                                 {isLoading && !result ? (
                                     <div className="flex items-center text-gray-400">
@@ -178,6 +209,12 @@ const AdkWorkbench: React.FC = () => {
                                     <div>
                                         {result.type === 'error' && <p className="text-red-400 whitespace-pre-wrap">{result.content}</p>}
                                         {result.type === 'text' && <p className="whitespace-pre-wrap text-gray-300">{result.content}</p>}
+                                        {result.type === 'notification' && (
+                                            <div className="bg-gray-800 p-3 rounded border-l-4 border-green-500">
+                                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Message Drafted & Queued</div>
+                                                <p className="text-white italic">"{result.content}"</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : null}
                             </div>

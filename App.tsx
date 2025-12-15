@@ -12,12 +12,25 @@ import SiteSurveillance from './tools/VideoLab';
 import EmergencyResponse from './tools/VoiceAssistant';
 import PaperworkScanner from './tools/OpenAIPlayground';
 import AdkWorkbench from './tools/AgentHub';
+import SecurityOps from './tools/SecurityOps';
+import CompanyProfile from './tools/CompanyProfile';
+import XactimateBridge from './tools/XactimateBridge';
+import SheetifyCRM from './tools/CRM';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<Tool>(TOOLS[0]);
 
+  const handleNavigate = (toolId: string) => {
+    const tool = TOOLS.find((t) => t.id === toolId);
+    if (tool) {
+      setActiveTool(tool);
+    }
+  };
+
   const renderActiveTool = () => {
     switch (activeTool.id) {
+      case 'company-profile':
+        return <CompanyProfile onNavigate={handleNavigate} />;
       case 'command-center':
         return <CommandCenter />;
       case 'roof-inspector':
@@ -28,6 +41,10 @@ const App: React.FC = () => {
         return <ClaimsIntelligence />;
       case 'adk-workbench':
         return <AdkWorkbench />;
+      case 'xactimate-bridge':
+        return <XactimateBridge />;
+      case 'crm-suite':
+        return <SheetifyCRM />;
       case 'customer-service':
         return <CustomerService />;
       case 'site-surveillance':
@@ -36,6 +53,8 @@ const App: React.FC = () => {
         return <EmergencyResponse />;
       case 'paperwork-scanner':
         return <PaperworkScanner />;
+      case 'security-ops':
+        return <SecurityOps />;
       default:
         return <div className="p-8 text-center">Select a module to access the Operating System.</div>;
     }

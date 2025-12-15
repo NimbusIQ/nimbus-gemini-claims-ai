@@ -1,6 +1,6 @@
 {
-  "name": "RoofAI Pro",
-  "description": "The autonomous business operating system for the roofing and restoration industry. Features 'Zero-Click' AI, AR Roof Scans, Supplement Intelligence, and a Full-Stack Virtual Staff powered by the ADK.",
+  "name": "Nimbus Roofing AI",
+  "description": "The autonomous business OS for roofing. Powered by Gemini 3, Nano Banana, and the 4-Step MVP Framework. Features 'Zero-Click' AI, Spatial Scans, and Security Foundations.",
   "requestFramePermissions": [
     "microphone",
     "geolocation"

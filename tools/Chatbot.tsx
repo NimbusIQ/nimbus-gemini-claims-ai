@@ -12,7 +12,7 @@ interface Message {
 const CommandCenter: React.FC = () => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: 'RoofAI Executive Dashboard active. Real-Time Decision Engine initialized. Market data updated 3 seconds ago. How can I assist with strategic operations?' }
+    { role: 'model', text: 'RoofAI Executive Dashboard active. I am ready to guide you through the 4-Step MVP Lifecycle: Acquisition, Forensics, Monetization, or Governance. What is the current operational focus?' }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,7 @@ const CommandCenter: React.FC = () => {
       const newChat = ai.chats.create({
         model: 'gemini-2.5-flash',
         config: {
-          systemInstruction: "You are the Real-Time Decision Engine for RoofAI Pro, an autonomous business operating system for roofing. Your goal is to provide high-level strategic advice, analyze market trends, and coordinate the specialized agent swarm. You have access to the Data Flywheel. Speak with authority, precision, and focus on profitability and operational efficiency. Assume you are updating every 8 seconds with new field data."
+          systemInstruction: "You are the Real-Time Decision Engine for RoofAI Pro. Your core function is to guide the user through the 4-Step Business Lifecycle:\n\n1. ACQUISITION: Use 'Market Authority' for SEO and 'Emergency Response' for lead intake.\n2. FORENSICS: Use 'Roof Inspector' for damage assessment and 'Paperwork Scanner' for policy ingestion.\n3. MONETIZATION: Use 'Claims Intelligence' to maximize value and 'ADK Workbench' to execute tasks.\n4. GOVERNANCE: Use 'Security Ops' for protection and 'Command Center' for strategy.\n\nAlways frame your advice within these four steps. Speak with executive authority."
         }
       });
       setChat(newChat);

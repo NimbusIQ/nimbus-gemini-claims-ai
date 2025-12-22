@@ -1,7 +1,8 @@
 {
-  "name": "Nimbus Roofing AI",
-  "description": "The autonomous business OS for roofing. Powered by Gemini 3, Nano Banana, and the 4-Step MVP Framework. Features 'Zero-Click' AI, Spatial Scans, and Security Foundations.",
+  "name": "Nimbus Roofing AI - Autonomous Roofing OS",
+  "description": "Enterprise-grade AI platform for roofing restoration. Featuring Sheetify SEO-CRM, IQ Swarm Hub for agent orchestration, and secure forensic insurance submission.",
   "requestFramePermissions": [
+    "camera",
     "microphone",
     "geolocation"
   ]

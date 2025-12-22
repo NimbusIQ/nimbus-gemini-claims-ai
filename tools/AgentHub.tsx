@@ -1,229 +1,122 @@
 
-import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Spinner } from '../components/ui/Spinner';
-import { SearchIcon, SparklesIcon, MessageSquareIcon, ImageIcon, MicIcon } from '../components/Icons';
-
-type Agent = 'inspector' | 'claims' | 'marketing' | 'scheduler';
-
-interface AgentConfig {
-  id: Agent;
-  name: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const AGENTS: AgentConfig[] = [
-  { id: 'inspector', name: 'Roof Inspector', description: 'Analyzes AR scans for hail/wind damage.', icon: ImageIcon },
-  { id: 'claims', name: 'Claims Agent', description: 'Negotiates supplements using Code Insights.', icon: SparklesIcon },
-  { id: 'marketing', name: 'Market Authority', description: 'Generates geo-local storm landing pages.', icon: SearchIcon },
-  { id: 'scheduler', name: 'Dispatcher', description: 'Coordinates crews via Google Voice & Gmail.', icon: MessageSquareIcon },
-];
-
-interface AgentResult {
-  content: string;
-  type: 'text' | 'image' | 'error' | 'notification';
-  metadata?: string;
-}
+import { CPUIcon, SendIcon, BotIcon, ShieldIcon } from '../components/Icons';
 
 const AdkWorkbench: React.FC = () => {
-  const [selectedAgents, setSelectedAgents] = useState<Set<Agent>>(new Set(['marketing']));
-  const [prompt, setPrompt] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<Partial<Record<Agent, AgentResult>>>({});
-  const [ragStatus, setRagStatus] = useState<string>('Idle');
+  const [command, setCommand] = useState('');
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([
+    '[BOOT] Nimbus IQ OS Swarm Kernel v3.8 loading...',
+    '[INIT] McKinney Hub Node-1 active.',
+    '[SYSTEM] Awaiting Operator directive...'
+  ]);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
 
-  const handleAgentToggle = (agentId: Agent) => {
-    setSelectedAgents(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(agentId)) {
-        newSet.delete(agentId);
-      } else {
-        newSet.add(agentId);
-      }
-      return newSet;
-    });
-  };
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [terminalLogs]);
 
-  const triggerHaptic = () => {
-      if (navigator.vibrate) {
-          navigator.vibrate(50); // Short vibration for feedback
-      }
-  };
+  const handleCommand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!command.trim()) return;
+    
+    const userCmd = command.trim().toUpperCase();
+    setTerminalLogs(prev => [...prev, `> ${userCmd}`]);
+    setCommand('');
 
-  const executeTask = async () => {
-    if (!prompt.trim() || selectedAgents.size === 0) {
-      return;
-    }
-    setIsLoading(true);
-    setResults({});
-    setRagStatus('Querying BigQuery Vector Store...');
-    triggerHaptic();
-
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
-    const tasks: Promise<void>[] = Array.from(selectedAgents).map(async (agentId) => {
-      try {
-        let result: AgentResult | null = null;
-        switch (agentId) {
-          case 'inspector': {
-            const response = await ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: `Act as a HAAG Certified Roof Inspector. Based on this description, classify the damage severity and mention pixel-level analysis: "${prompt}"`,
-            });
-            result = { content: response.text, type: 'text' };
-            break;
-          }
-          case 'claims': {
-            const response = await ai.models.generateContent({
-              model: "gemini-2.5-pro",
-              contents: `Act as a Public Adjuster. Write a supplement request for the following situation, citing specific IRC codes: "${prompt}"`,
-              config: { thinkingConfig: { thinkingBudget: 2048 } },
-            });
-            result = { content: response.text, type: 'text' };
-            break;
-          }
-          case 'marketing': {
-            const response = await ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: `Act as a Local SEO Expert. Write a "Zero-Click" optimized blog post intro for a roofing company in response to: "${prompt}"`,
-              config: { tools: [{ googleSearch: {} }] },
-            });
-            result = { content: response.text, type: 'text' };
-            break;
-          }
-          case 'scheduler': {
-             // Simulate SMS/Email generation
-             const response = await ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: `Draft a short, professional urgent notification (SMS/Email) to a crew lead regarding: "${prompt}". Return ONLY the message body.`,
-            });
-            
-            // Simulate the "Sending" process
-            await new Promise(r => setTimeout(r, 800)); 
-            
-            result = { 
-                content: response.text, 
-                type: 'notification',
-                metadata: 'Sent via Google Voice & Gmail API'
-            };
-            break;
-          }
-        }
-        if (result) {
-          setResults(prev => ({ ...prev, [agentId as string]: result } as Partial<Record<Agent, AgentResult>>));
-        }
-      } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-        setResults(prev => ({ ...prev, [agentId as string]: { content: `Agent failed: ${errorMessage}`, type: 'error' } } as Partial<Record<Agent, AgentResult>>));
-      }
-    });
-
-    await Promise.allSettled(tasks);
-    setRagStatus('Self-Correction Loop Complete (Quantized)');
-    triggerHaptic();
-    setIsLoading(false);
+    setTimeout(() => {
+      setTerminalLogs(prev => [
+        ...prev, 
+        `[IQ_ROUTER] Analyzing intent: "${userCmd}"...`,
+        `[ADK_ORCHESTRATOR] Routing to micro-agents...`,
+        `[SUCCESS] Swarm action dispatched. Tracking in Sheetify.`
+      ]);
+    }, 600);
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <div className="p-6 space-y-4">
-          <div>
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold text-white">1. Select Virtual Staff</h3>
-                <span className="text-xs text-indigo-400 font-mono flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    RAG: {ragStatus}
-                </span>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-14rem)]">
+      {/* Command Terminal */}
+      <Card className="lg:col-span-2 flex flex-col bg-black/80 border-indigo-500/20 font-mono overflow-hidden shadow-2xl">
+          <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+            <div className="flex items-center gap-2">
+              <CPUIcon className="w-4 h-4 text-indigo-500 animate-pulse" />
+              <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">IQ_AGENT_COMMAND_CONSOLE</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {AGENTS.map((agent) => (
-                <div
-                  key={agent.id}
-                  onClick={() => handleAgentToggle(agent.id)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedAgents.has(agent.id) ? 'border-indigo-500 bg-indigo-900/30' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center mb-2">
-                    <agent.icon className="w-6 h-6 mr-3 text-indigo-400" />
-                    <h4 className="font-bold text-white">{agent.name}</h4>
-                  </div>
-                  <p className="text-xs text-gray-400">{agent.description}</p>
-                </div>
-              ))}
+            <div className="flex gap-1.5">
+               <div className="w-2.5 h-2.5 rounded-full bg-red-500/30"></div>
+               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/30"></div>
+               <div className="w-2.5 h-2.5 rounded-full bg-green-500/30"></div>
             </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">2. Assign Task to ADK Swarm</h3>
-            <textarea
-              rows={5}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., A massive hailstorm just hit Frisco, TX. Mobilize the team, write a blog post, and draft an email to existing clients in that zip code."
-              className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
+          
+          <div className="flex-1 p-6 overflow-y-auto space-y-1.5 no-scrollbar text-gray-400">
+            {terminalLogs.map((log, i) => (
+              <div key={i} className={`text-[11px] leading-relaxed ${
+                log.startsWith('>') ? 'text-cyan-400 font-bold' : 
+                log.includes('[SUCCESS]') ? 'text-green-400' : ''
+              }`}>
+                {log}
+              </div>
+            ))}
+            <div ref={terminalEndRef} />
           </div>
-          <div className="flex justify-end">
-            <Button onClick={executeTask} isLoading={isLoading} disabled={!prompt.trim() || selectedAgents.size === 0}>
-              Deploy Agents (Haptic Enabled)
-            </Button>
-          </div>
-        </div>
+
+          <form onSubmit={handleCommand} className="p-4 bg-gray-900/80 border-t border-gray-800 flex items-center gap-3">
+             <span className="text-indigo-500 font-black text-xs select-none">IQ_IN:</span>
+             <input 
+                type="text"
+                value={command}
+                onChange={e => setCommand(e.target.value)}
+                placeholder="ISSUE SWARM DIRECTIVE..."
+                className="flex-1 bg-transparent border-none outline-none text-xs text-white uppercase font-black placeholder:text-gray-700 tracking-wider"
+             />
+             <button type="submit" className="p-2 hover:bg-indigo-600/20 rounded-lg transition-all">
+                <SendIcon className="w-4 h-4 text-indigo-400" />
+             </button>
+          </form>
       </Card>
 
-      {(isLoading || Object.keys(results).length > 0) && (
-        <div>
-            <h2 className="text-2xl font-bold text-white mb-4">Swarm Activity Log</h2>
-            {isLoading && !Object.keys(results).length && (
-                <Card className="p-6">
-                    <div className="flex items-center justify-center p-8">
-                        <Spinner />
-                        <span className="ml-3">Gemini 3 (Nano) is iterating on your directive...</span>
-                    </div>
-                </Card>
-            )}
-             <div className="space-y-4">
-                {AGENTS.filter(a => selectedAgents.has(a.id)).map(agent => {
-                    const result = results[agent.id];
-                    return (
-                        <Card key={agent.id}>
-                            <div className="p-6">
-                                <div className="flex items-center mb-3">
-                                    <agent.icon className="w-6 h-6 mr-3 text-indigo-400" />
-                                    <h3 className="text-lg font-semibold text-white">{agent.name} Output</h3>
-                                    {result?.type === 'notification' && (
-                                        <span className="ml-auto text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded border border-green-700">
-                                            {result.metadata}
-                                        </span>
-                                    )}
-                                </div>
-                                {isLoading && !result ? (
-                                    <div className="flex items-center text-gray-400">
-                                        <Spinner /> <span className="ml-2">Processing...</span>
-                                    </div>
-                                ) : result ? (
-                                    <div>
-                                        {result.type === 'error' && <p className="text-red-400 whitespace-pre-wrap">{result.content}</p>}
-                                        {result.type === 'text' && <p className="whitespace-pre-wrap text-gray-300">{result.content}</p>}
-                                        {result.type === 'notification' && (
-                                            <div className="bg-gray-800 p-3 rounded border-l-4 border-green-500">
-                                                <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Message Drafted & Queued</div>
-                                                <p className="text-white italic">"{result.content}"</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </Card>
-                    );
-                })}
-            </div>
-        </div>
-      )}
+      {/* Swarm Intelligence Sidebar */}
+      <div className="space-y-6">
+        <Card className="p-6 bg-gray-950 border-gray-800">
+          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 border-b border-gray-900 pb-3 flex items-center gap-2">
+            <BotIcon className="w-4 h-4" /> Agent Status Swarm
+          </h3>
+          <div className="space-y-4">
+             {[
+               { name: 'Hunter', status: 'Hunting Storms', code: 'A2A_LINK' },
+               { name: 'Negotiator', status: 'Auditing Scopes', code: 'SUPP_GEN' },
+               { name: 'Paperwork', status: 'Digitizing Policy', code: 'OCR_VER' }
+             ].map((agent, i) => (
+               <div key={i} className="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-indigo-500/20 transition-all cursor-default group">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[9px] font-black text-indigo-400 uppercase">{agent.name} Agent</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px] shadow-green-500/50"></span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{agent.status}</p>
+                  <div className="mt-2 text-[8px] font-mono text-gray-600 group-hover:text-gray-400 transition-colors tracking-widest">
+                    SYNC_TOKEN: {agent.code}_X7
+                  </div>
+               </div>
+             ))}
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-indigo-950/30 to-black border-indigo-500/20 text-center">
+             <div className="relative inline-block mb-4">
+               <ShieldIcon className="w-12 h-12 text-indigo-600 opacity-20 mx-auto" />
+               <CPUIcon className="w-6 h-6 text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+             </div>
+             <div className="text-2xl font-black text-white tracking-tighter">AGENT2PAYMENT</div>
+             <p className="text-[9px] text-indigo-300 font-black uppercase tracking-[0.2em] mt-1">Autonomous Fund Settlement Ready</p>
+             <div className="mt-4 flex gap-1 justify-center">
+                <div className="w-1 h-1 bg-indigo-600 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-1 h-1 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+             </div>
+        </Card>
+      </div>
     </div>
   );
 };

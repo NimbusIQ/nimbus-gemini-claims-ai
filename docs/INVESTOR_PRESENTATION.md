@@ -1,8 +1,8 @@
 
-# Pitch Deck: Nimbus IQ AI Research Lab
+# Pitch Deck: Nimbus Roofing AI Research Lab
 
 ## Slide 1: Title Slide
-*   **Logo:** Nimbus IQ
+*   **Logo:** Nimbus Roofing AI
 *   **Tagline:** The Autonomous Operating System for Restoration.
 *   **Presenters:** Dustin Moore (Founder & CEO, CTO, Head of AI Research)
 
@@ -16,7 +16,7 @@
 
 ## Slide 3: The Solution
 *   **Headline:** Sovereign AI Agents.
-*   **Visual:** Side-by-side comparison: "Human Adjuster (2 hours)" vs "RoofAI Agent (4 seconds)".
+*   **Visual:** Side-by-side comparison: \"Human Adjuster (2 hours)\" vs \"Nimbus Roofing Agent (4 seconds)\".
 *   **Key Concept:** We don't just provide tools; we provide *digital labor*.
 
 ## Slide 4: Product - Forensics
@@ -47,7 +47,7 @@
 *   **Matrix:** 
     *   **Legacy:** Xactimate, AccuLynx (High Friction, Low AI)
     *   **Point Solutions:** EagleView (Just Images, No Logic)
-    *   **Nimbus IQ:** (Full Autonomy, High AI, Low Friction)
+    *   **Nimbus Roofing AI:** (Full Autonomy, High AI, Low Friction)
 
 ## Slide 10: Business Model
 *   **SaaS:** $199/mo/seat
@@ -55,9 +55,9 @@
 *   **Unit Economics:** LTV:CAC ratio of 5:1.
 
 ## Slide 11: Go-to-Market Strategy
-*   **Direct Sales:** Focusing on the "Top 200" Restoration firms.
+*   **Direct Sales:** Focusing on the \"Top 200\" Restoration firms.
 *   **Channel Partners:** Integrating with drone hardware providers.
-*   **PLG (Product Led Growth):** Free "Code Audit" tool as a lead magnet.
+*   **PLG (Product Led Growth):** Free \"Code Audit\" tool as a lead magnet.
 
 ## Slide 12: Traction
 *   500+ Contractors on Waitlist.
@@ -72,7 +72,7 @@
 ## Slide 14: Why Google Cloud?
 *   **Vertex AI:** Access to Gemini 3 / Nano Banana models for edge efficiency.
 *   **Data:** BigQuery Vector Search for RAG pipelines.
-*   **Security:** Only GCP offers the "Security Foundations Blueprint" we need for Enterprise Insurance contracts.
+*   **Security:** Only GCP offers the \"Security Foundations Blueprint\" we need for Enterprise Insurance contracts.
 
 ## Slide 15: The Ask
 *   **Capital:** Raising $2M Seed.

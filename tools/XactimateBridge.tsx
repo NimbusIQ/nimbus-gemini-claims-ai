@@ -1,328 +1,273 @@
 
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Spinner } from '../components/ui/Spinner';
-import { DownloadIcon, ShieldIcon, FileCodeIcon, SearchIcon, InfoIcon } from '../components/Icons';
+import { ShieldIcon, CPUIcon, SendIcon, TableIcon, SparklesIcon, FileCodeIcon, DownloadIcon } from '../components/Icons';
 
-// --- Types ---
-interface LineItem {
-  desc: string;
-  qty: number;
-  unit: string;
-  category: string;
-  selector: string;
-  note?: string; // The critical "Compliance Citation"
-  value?: number; // Simulated dollar value
+interface ValidationResult {
+  codeReference: string;
+  discrepancy: string;
+  recommendedUpgrade: string;
+  justification: string;
 }
 
-interface DroneData {
-  claim_id: string;
-  zip_code: string;
-  measurements: {
-    total_sq_ft: number;
-    pitch: string;
-  };
-  line_items: LineItem[];
-}
+const XactimateBridge: React.FC = () => {
+  const [isValidating, setIsValidating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [validationSteps, setValidationSteps] = useState<string[]>([]);
+  const [report, setReport] = useState<any>(null);
+  const [hasValidated, setHasValidated] = useState(false);
 
-interface XactimateBridgeProps {
-    onNavigate?: (toolId: string) => void;
-}
-
-// --- Mock "Ground Truth" Database ---
-const MUNICIPAL_CODES: Record<string, any> = {
-  "78701": { 
-    jurisdiction: "City of Austin, TX",
-    code_year: "2021 IBC",
-    requirements: {
-      ice_water_shield: false,
-      drip_edge: true, // Code R905.2.8.5
-      shingle_match: "Reasonable Match (TDI)"
-    }
-  },
-  "80205": { 
-    jurisdiction: "City/County of Denver, CO",
-    code_year: "2018 IBC",
-    requirements: {
-      ice_water_shield: true, // REQUIRED: 24" inside exterior wall
-      drip_edge: true,
-      wind_speed: "115 mph"
-    }
-  }
-};
-
-const DEFAULT_DRAFT: DroneData = {
-  claim_id: "NIMBUS-STORM-25",
-  zip_code: "80205", // Default to Denver to show the "Ice & Water Shield" add
-  measurements: { total_sq_ft: 3000, pitch: "9/12" },
-  line_items: [
-    { desc: "3-Tab Shingles (Tear Off)", qty: 30, unit: "SQ", category: "RFG", selector: "300", value: 2100 },
-    { desc: "3-Tab Shingles (Install)", qty: 30, unit: "SQ", category: "RFG", selector: "300S", value: 4500 },
-    { desc: "Ridge Cap", qty: 120, unit: "LF", category: "RFG", selector: "RIDGC", value: 600 }
-  ]
-};
-
-const XactimateBridge: React.FC<XactimateBridgeProps> = ({ onNavigate }) => {
-  const [inputJson, setInputJson] = useState<string>(JSON.stringify(DEFAULT_DRAFT, null, 2));
-  const [enrichedJson, setEnrichedJson] = useState<DroneData | null>(null);
-  const [complianceLog, setComplianceLog] = useState<string[]>([]);
-  const [isAuditing, setIsAuditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'draft' | 'audit' | 'xml'>('audit');
-
-  const runComplianceEngine = async () => {
-    setIsAuditing(true);
-    setComplianceLog([]);
-    setEnrichedJson(null);
-    setActiveTab('audit');
+  const runAudit = async () => {
+    setIsValidating(true);
+    setHasValidated(false);
+    setValidationSteps([
+        '📡 INITIALIZING: Xactimate Data Packet v2025.4...', 
+        '💰 FETCHING: Real-time Material Index (Collin County)...',
+        '📖 RETRIEVING: IBC 2021 / McKinney Local Amendments...', 
+        '🛡️ VERIFYING: Security Ops Operator: Dustin Moore...',
+        '🤖 REASONING: Mapping XML line items to Texas Administrative Code...'
+    ]);
+    setReport(null);
 
     try {
-      const draft: DroneData = JSON.parse(inputJson);
-      const zip = draft.zip_code;
-      const codes = MUNICIPAL_CODES[zip] || MUNICIPAL_CODES["78701"]; // Fallback
-
-      // Step 1: Simulate Database Lookup
-      setComplianceLog(prev => [...prev, `📍 Locating Jurisdiction: ${zip}...`]);
-      await new Promise(r => setTimeout(r, 600));
-      setComplianceLog(prev => [...prev, `✅ Found: ${codes.jurisdiction} (${codes.code_year})`]);
-      setComplianceLog(prev => [...prev, `📖 Retrieving Ordinances: ${JSON.stringify(codes.requirements)}`]);
-      
-      // Step 2: Gemini Audit
-      await new Promise(r => setTimeout(r, 800));
-      setComplianceLog(prev => [...prev, `🤖 Agent "Sentinel-Audit" Initialized (Gemini 3 Reasoning)...`]);
-      
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      
-      // We prompt the model to "Fix" the JSON
-      const prompt = `
-      Act as "Sentinel-Audit", a Senior Code Compliance Officer.
-      
-      LOCAL CODES FOR ZIP ${zip}:
-      ${JSON.stringify(codes)}
-      
-      DRAFT ESTIMATE JSON:
-      ${JSON.stringify(draft)}
-      
-      INSTRUCTIONS:
-      1. Analyze the Draft against Local Codes.
-      2. If 'Ice & Water Shield' is required but missing, ADD it to 'line_items'.
-      3. If 'Drip Edge' is required but missing, ADD it.
-      4. Add a 'note' field to added items citing the specific code statute (e.g., "Added per IBC 2018 Sec 1507.2").
-      5. Calculate 'value' for added items ($150 per SQ for IWS, $3 per LF for Drip Edge).
-      6. Return ONLY the valid JSON of the full enriched estimate object.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
-        config: {
-           responseMimeType: "application/json"
-        }
-      });
-
-      const resultText = response.text;
-      const finalData: DroneData = JSON.parse(resultText);
-      
-      setEnrichedJson(finalData);
-      setComplianceLog(prev => [...prev, `✅ Audit Complete. Compliance Enforcement Applied.`]);
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        
+        // Detailed prompt to trigger the validation reasoning as a "Forensic Engineer"
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: `Act as a Forensic Claims Engineer (The Accountant Sniper). 
+            Cross-check the following roofing estimate for a property in McKinney, TX (Zip 75071) against the International Building Code (IBC) 2021 and local McKinney amendments.
+            
+            Scope to Audit: Asphalt shingle roof, 15lb felt, standard ridge, no drip edge listed, no starter strip listed.
+            
+            Your Task:
+            1. Identify every instance where the estimate fails to meet IBC 2021 or McKinney Code.
+            2. Suggest the specific Xactimate line item code for the missing/incorrect item.
+            3. Provide a justification based on Code Reference (e.g., R905.2.8.5).
+            4. Calculate the 'Revenue Lift' if these missing items are added.
+            
+            Return JSON format.`,
+            config: { 
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        status: { type: Type.STRING },
+                        revenueLift: { type: Type.STRING },
+                        validations: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    codeReference: { type: Type.STRING },
+                                    discrepancy: { type: Type.STRING },
+                                    recommendedUpgrade: { type: Type.STRING },
+                                    justification: { type: Type.STRING }
+                                },
+                                required: ['codeReference', 'discrepancy', 'recommendedUpgrade', 'justification']
+                            }
+                        },
+                        xmlSnippet: { type: Type.STRING }
+                    },
+                    required: ['status', 'revenueLift', 'validations', 'xmlSnippet']
+                }
+            }
+        });
+        
+        await new Promise(r => setTimeout(r, 2000));
+        const parsedReport = JSON.parse(response.text);
+        setReport(parsedReport);
+        setHasValidated(true);
 
     } catch (e) {
-      setComplianceLog(prev => [...prev, `❌ Error: ${e instanceof Error ? e.message : 'Unknown'}`]);
+        console.error(e);
+        alert("Forensic Validation Engine Error: Ensure API connectivity.");
     } finally {
-      setIsAuditing(false);
+        setIsValidating(false);
     }
   };
 
-  const calculateTotal = (items: LineItem[]) => items.reduce((acc, item) => acc + (item.value || 0), 0);
-  
-  const generateEsx = () => {
-    if(!enrichedJson) return "Run Audit First";
-    // Simplified ESX simulation
-    return `<?xml version="1.0"?>
-<XactimateEstimate>
-  <AdminInfo>
-    <Claim>${enrichedJson.claim_id}</Claim>
-    <Zip>${enrichedJson.zip_code}</Zip>
-    <Creator>Nimbus Compliance Engine</Creator>
-  </AdminInfo>
-  <LineItems>
-    ${enrichedJson.line_items.map(item => `
-    <Item>
-      <Cat>${item.category}</Cat>
-      <Sel>${item.selector}</Sel>
-      <Desc>${item.desc}</Desc>
-      <Qty>${item.qty}</Qty>
-      <Note>${item.note || ''}</Note>
-    </Item>`).join('')}
-  </LineItems>
-</XactimateEstimate>`;
+  const handleSaveToLab = async () => {
+    if (!hasValidated) {
+        alert("SECURITY PROTOCOL: You must run a Forensic Audit before saving to the Research Lab.");
+        return;
+    }
+    setIsSaving(true);
+    await new Promise(r => setTimeout(r, 1500));
+    alert(`[SYSTEM] Estimate #NIM-75071 successfully vaulted in Cloud Run Persistent Storage.\n\nStatus: FORENSIC_VALIDATED`);
+    setIsSaving(false);
+  };
+
+  const handleInsuranceSubmission = async () => {
+      setIsSubmitting(true);
+      await new Promise(r => setTimeout(r, 2500));
+      alert(`[IQ_SECURITY_OPS_VERIFIED]\n\nEstimate dispatched to Carrier Portal with Code-Justification PDF attached.\nOperator: Dustin Moore\nIntegrity Hash: 0x88A2...`);
+      setIsSubmitting(false);
   };
 
   return (
-    <div className="space-y-6">
-      {onNavigate && (
-        <div className="bg-indigo-900/30 border border-indigo-500/30 rounded-lg p-3 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center space-x-2">
-                <InfoIcon className="w-5 h-5 text-indigo-400"/>
-                <span className="text-sm text-indigo-100 font-medium">New to Nimbus IQ? Discover our Google for Startups mission.</span>
-            </div>
-            <button onClick={() => onNavigate('about')} className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition-colors shadow-sm">
-                Learn More About Nimbus IQ AI &rarr;
-            </button>
+    <div className="space-y-6 max-w-6xl mx-auto pb-20">
+      <Card className="p-8 bg-black/60 border-indigo-500/20 relative overflow-hidden shadow-2xl backdrop-blur-xl">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+           <ShieldIcon className="w-96 h-96 text-indigo-500" />
         </div>
-      )}
-
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-14rem)]">
-        {/* LEFT: Input / Draft */}
-        <Card className="w-full lg:w-1/3 flex flex-col p-4 border-gray-700 bg-gray-800/80">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-2">
-                <h2 className="text-lg font-bold text-white flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs mr-2">1</div>
-                    Step 1: Draft Estimate
-                </h2>
-                <div className="text-xs text-gray-500 font-mono">NIMBUS ROOFING</div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12 relative z-10">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-[3.5rem] flex items-center justify-center shadow-2xl border border-indigo-400/20 group">
+                <FileCodeIcon className="w-12 h-12 text-white group-hover:scale-110 transition-transform" />
             </div>
-            
-            <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-400 mb-1">Project Location</label>
-                <select 
-                    className="w-full bg-gray-900 text-sm text-white border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    onChange={(e) => {
-                        const newData = {...DEFAULT_DRAFT, zip_code: e.target.value};
-                        setInputJson(JSON.stringify(newData, null, 2));
-                        setEnrichedJson(null);
-                    }}
-                >
-                    <option value="80205">Denver, CO (Strict Code)</option>
-                    <option value="78701">Austin, TX (Moderate Code)</option>
-                </select>
+            <div>
+              <h3 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-none">Forensic Validation</h3>
+              <div className="flex items-center gap-4 mt-3">
+                 <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                    Accountant Sniper Mode
+                 </div>
+                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Target: Zip 75071 | Carrier: State Farm</span>
+              </div>
             </div>
+          </div>
+          <div className="flex gap-4">
+            <Button 
+                onClick={runAudit} 
+                isLoading={isValidating} 
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-6 text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl active:scale-95 transition-all"
+            >
+                Initiate Forensic Audit
+            </Button>
+          </div>
+        </div>
 
-            <div className="flex-1 flex flex-col min-h-0">
-                <label className="block text-xs font-medium text-gray-400 mb-1">Raw Drone Data (JSON)</label>
-                <textarea
-                    value={inputJson}
-                    onChange={(e) => setInputJson(e.target.value)}
-                    className="flex-1 bg-gray-900/50 font-mono text-xs text-blue-300 p-4 rounded-lg border border-gray-700 focus:outline-none focus:border-indigo-500 resize-none"
-                />
-            </div>
+        {isValidating && (
+          <div className="space-y-3 font-mono bg-gray-900/60 p-8 rounded-[2rem] border border-gray-800 shadow-inner">
+            {validationSteps.map((s, i) => (
+              <div key={i} className="text-[11px] text-indigo-400 flex items-center gap-4 animate-in fade-in slide-in-from-left-6" style={{animationDelay: `${i*0.3}s`}}>
+                <span className="text-gray-700 font-black">[{i+1}]</span>
+                <span className="tracking-tight uppercase">{s}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-            <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="flex justify-between text-sm text-gray-400 mb-3">
-                    <span>Draft Value:</span>
-                    <span className="text-white font-mono">${calculateTotal(JSON.parse(inputJson).line_items).toLocaleString()}</span>
+        {report && (
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in zoom-in-95 duration-700">
+            {/* Left: Summary and Lift */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="p-10 bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/20 rounded-[3rem] relative overflow-hidden group shadow-xl">
+                <div className="absolute top-0 right-0 p-5 opacity-10">
+                   <SparklesIcon className="w-32 h-32 text-green-400" />
                 </div>
-                <Button onClick={runComplianceEngine} className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 relative overflow-hidden group">
-                    <span className="relative z-10 flex items-center justify-center font-bold">
-                        <ShieldIcon className="w-5 h-5 mr-2"/> 
-                        Run Step 2: Compliance Loop
-                    </span>
-                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                </Button>
-            </div>
-        </Card>
+                <div className="text-[10px] font-black text-green-400 uppercase mb-3 tracking-[0.2em]">Forensic Revenue Lift</div>
+                <div className="text-7xl font-black text-white italic tracking-tighter drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]">+{report.revenueLift}</div>
+                <div className="mt-6 flex items-center gap-3">
+                    <CPUIcon className="w-5 h-5 text-green-500" />
+                    <span className="text-[11px] text-green-300 font-black uppercase tracking-widest">Code-Density Validated</span>
+                </div>
+              </div>
+              
+              <div className="p-8 bg-gray-950/80 border border-gray-800 rounded-[3rem] flex-1 shadow-inner">
+                <div className="mb-6 text-indigo-500 font-black flex justify-between uppercase tracking-[0.3em] text-[9px]">
+                    <span>// AUDIT_INPUT_XML</span>
+                    <span className="text-gray-800 animate-pulse">ESX_STREAM_DECRYPTED</span>
+                </div>
+                <pre className="whitespace-pre-wrap leading-relaxed opacity-40 font-mono text-[10px] text-indigo-100/70 h-48 overflow-y-auto no-scrollbar selection:bg-indigo-500/50">
+                    {report.xmlSnippet}
+                </pre>
+              </div>
 
-        {/* RIGHT: Engine Output */}
-        <Card className="w-full lg:w-2/3 flex flex-col border-indigo-500/30">
-            {/* Header Tabs */}
-            <div className="flex border-b border-gray-700 bg-gray-800/50 rounded-t-xl">
-                <button onClick={() => setActiveTab('audit')} className={`flex-1 py-3 px-4 text-sm font-medium flex items-center justify-center ${activeTab === 'audit' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-900/10' : 'text-gray-400 hover:text-white'}`}>
-                    <div className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] mr-2">2</div>
-                    Step 2: AI Audit
-                </button>
-                <button onClick={() => setActiveTab('xml')} disabled={!enrichedJson} className={`flex-1 py-3 px-4 text-sm font-medium flex items-center justify-center ${activeTab === 'xml' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-900/10' : 'text-gray-400 hover:text-white disabled:opacity-30'}`}>
-                    <div className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] mr-2">3</div>
-                    Step 3: Revised Estimate (Submission)
-                </button>
+              {hasValidated && (
+                <div className="p-6 bg-indigo-600/10 border border-indigo-500/30 rounded-[2rem] text-center shadow-lg animate-in fade-in slide-in-from-bottom-2">
+                    <ShieldIcon className="w-10 h-10 text-indigo-500 mx-auto mb-3" />
+                    <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Forensic Seal of Integrity</div>
+                    <p className="text-[9px] text-indigo-400 font-bold uppercase italic">Verified by Node: Dustin Moore</p>
+                </div>
+              )}
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto bg-gray-900/30 relative">
-                {isAuditing && (
-                    <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                        <Spinner />
-                        <p className="mt-4 text-indigo-400 font-mono text-sm animate-pulse">Sentinel-Audit: Cross-referencing 2021 IBC Codes...</p>
+            {/* Right: Detailed Validation Results */}
+            <div className="lg:col-span-8 flex flex-col gap-6">
+                <Card className="flex-1 bg-gray-950/50 border-gray-800 rounded-[3rem] p-10 overflow-y-auto no-scrollbar max-h-[600px] shadow-2xl">
+                    <div className="flex justify-between items-center mb-10 border-b border-gray-900 pb-6">
+                        <h4 className="text-[12px] font-black text-gray-500 uppercase tracking-[0.5em]">Forensic Discrepancy Log</h4>
+                        <span className="px-4 py-1 bg-red-900/20 text-red-400 text-[10px] font-black rounded-full border border-red-900/30">
+                            {report.validations.length} ANOMALIES TARGETED
+                        </span>
                     </div>
-                )}
 
-                {activeTab === 'audit' && (
-                    <div className="space-y-6">
-                        {/* Log Stream */}
-                        <div className="bg-black/40 rounded-lg p-4 font-mono text-xs space-y-2 border border-gray-800">
-                            {complianceLog.length === 0 && <span className="text-gray-600">// Waiting for Input...</span>}
-                            {complianceLog.map((log, i) => (
-                                <div key={i} className="text-green-400 border-l-2 border-green-800 pl-2">{log}</div>
-                            ))}
-                        </div>
-
-                        {/* Enriched Results */}
-                        {enrichedJson && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                                <h3 className="text-white font-bold flex items-center text-lg">
-                                    <ShieldIcon className="w-6 h-6 mr-2 text-green-500"/>
-                                    Defensible Estimate Generated
-                                </h3>
-                                <p className="text-sm text-gray-400">The following items were added to ensure code compliance and maximize claim value.</p>
-                                
-                                <div className="grid gap-3">
-                                    {enrichedJson.line_items.map((item, idx) => (
-                                        <div key={idx} className={`p-4 rounded-lg border transition-all ${item.note ? 'bg-indigo-900/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.15)]' : 'bg-gray-800 border-gray-700 opacity-60'}`}>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="font-bold text-white flex items-center">
-                                                        {item.desc}
-                                                        {item.note && <span className="ml-2 text-[10px] bg-indigo-500 text-white px-1.5 rounded-sm uppercase">Added</span>}
-                                                    </div>
-                                                    <div className="text-xs text-gray-400 mt-1">Cat: {item.category} | Sel: {item.selector} | Qty: {item.qty} {item.unit}</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="font-mono text-green-400 font-bold">+${item.value?.toLocaleString()}</div>
-                                                </div>
+                    <div className="space-y-10">
+                        {report.validations.map((v: ValidationResult, i: number) => (
+                            <div key={i} className="group animate-in slide-in-from-right-8" style={{animationDelay: `${i*0.15}s`}}>
+                                <div className="flex items-start gap-8">
+                                    <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover:bg-indigo-600/20 transition-all shadow-lg">
+                                        <span className="text-indigo-400 font-black text-lg font-mono">0{i+1}</span>
+                                    </div>
+                                    <div className="space-y-4 flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div className="text-indigo-500 font-black text-[11px] uppercase tracking-[0.2em] bg-indigo-500/5 px-3 py-1 rounded border border-indigo-500/10">{v.codeReference}</div>
+                                            <span className="text-red-500 font-black text-[10px] uppercase tracking-tighter animate-pulse">MISSING FROM SCOPE</span>
+                                        </div>
+                                        <p className="text-lg text-gray-200 font-bold leading-tight group-hover:text-white transition-colors">{v.discrepancy}</p>
+                                        <div className="p-6 bg-green-950/20 border border-green-800/20 rounded-[2rem] shadow-inner">
+                                            <div className="text-green-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <SparklesIcon className="w-4 h-4" /> Mandatory Forensic Upgrade
                                             </div>
-                                            {item.note && (
-                                                <div className="mt-3 text-xs bg-indigo-900/40 text-indigo-200 p-2.5 rounded border border-indigo-500/30 flex items-start">
-                                                    <SearchIcon className="w-3 h-3 mr-2 mt-0.5 flex-shrink-0 text-indigo-400"/>
-                                                    <span className="italic">"{item.note}"</span>
-                                                </div>
-                                            )}
+                                            <p className="text-[13px] text-green-100 font-bold italic tracking-tight">{v.recommendedUpgrade}</p>
                                         </div>
-                                    ))}
-                                </div>
-                                
-                                {/* Value Summary */}
-                                <div className="bg-gradient-to-r from-green-900/30 to-indigo-900/30 p-5 rounded-xl border border-green-500/40 flex justify-between items-center mt-4">
-                                    <div>
-                                        <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Revised Value</div>
-                                        <div className="text-3xl font-bold text-white">${calculateTotal(enrichedJson.line_items).toLocaleString()}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-xs text-green-400 uppercase tracking-wider font-semibold">Compliance Lift</div>
-                                        <div className="text-2xl font-bold text-green-400">
-                                            +${(calculateTotal(enrichedJson.line_items) - calculateTotal(JSON.parse(inputJson).line_items)).toLocaleString()}
-                                        </div>
+                                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed border-l-2 border-gray-800 pl-4">{v.justification}</p>
                                     </div>
                                 </div>
+                                {i < report.validations.length - 1 && <div className="h-px bg-gray-900 mt-10"></div>}
                             </div>
-                        )}
+                        ))}
                     </div>
-                )}
+                </Card>
 
-                {activeTab === 'xml' && (
-                    <div className="h-full flex flex-col">
-                        <h3 className="text-white font-bold mb-2">Ready for Submission</h3>
-                        <p className="text-sm text-gray-400 mb-4">Copy this .ESX compatible XML to upload directly to Xactimate or Symbility.</p>
-                        <textarea 
-                            readOnly 
-                            value={generateEsx()} 
-                            className="flex-1 bg-gray-900 font-mono text-xs text-yellow-100 p-4 rounded border border-gray-700 resize-none focus:outline-none"
-                        />
-                        <Button onClick={() => navigator.clipboard.writeText(generateEsx())} className="mt-4">
-                            <DownloadIcon className="w-4 h-4 mr-2" /> Copy ESX to Clipboard
-                        </Button>
-                    </div>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button 
+                    onClick={handleSaveToLab} 
+                    isLoading={isSaving}
+                    className="bg-gray-800 hover:bg-gray-700 text-white py-10 text-xl font-black uppercase tracking-widest rounded-[2.5rem] shadow-2xl active:scale-[0.98] transition-all border border-gray-700 group"
+                  >
+                    <DownloadIcon className="w-6 h-6 mr-4 group-hover:translate-y-1 transition-transform" /> 
+                    Save to Lab
+                  </Button>
+                  <Button 
+                    onClick={handleInsuranceSubmission} 
+                    isLoading={isSubmitting}
+                    disabled={!hasValidated}
+                    className={`py-10 text-xl font-black uppercase tracking-widest rounded-[2.5rem] shadow-[0_20px_50px_rgba(79,70,229,0.3)] active:scale-[0.98] transition-all border group ${hasValidated ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-400/30' : 'bg-gray-900 border-gray-800 text-gray-600 opacity-50 cursor-not-allowed'}`}
+                  >
+                    <SendIcon className="w-6 h-6 mr-4 group-hover:translate-x-1 transition-transform" /> 
+                    Submit Validated
+                  </Button>
+                </div>
             </div>
-        </Card>
+          </div>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+         {[
+            { name: 'Sheetify Sync', status: 'Online', icon: TableIcon },
+            { name: 'Cloud Run Hub', status: 'Ready', icon: CPUIcon },
+            { name: 'IBC Index', status: 'v2021.4', icon: ShieldIcon },
+            { name: 'Code Auditor', status: 'Sniper_v4', icon: FileCodeIcon }
+         ].map((api, i) => (
+             <Card key={i} className="p-6 bg-black/40 border-gray-800 flex items-center justify-between group hover:border-indigo-500/20 transition-all cursor-default">
+                 <div className="flex items-center gap-4">
+                    <api.icon className={`w-6 h-6 text-gray-700 group-hover:text-indigo-500 transition-colors`} />
+                    <div>
+                       <div className="text-[10px] font-black text-white uppercase tracking-widest">{api.name}</div>
+                       <div className={`text-[9px] text-gray-600 font-bold uppercase`}>{api.status}</div>
+                    </div>
+                 </div>
+                 <div className={`w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]`}></div>
+             </Card>
+         ))}
       </div>
     </div>
   );

@@ -23,17 +23,17 @@ const MarketAuthority: React.FC = () => {
     ],
     backlinks: [
         "Find 5 high-authority roofing or home improvement blogs accepting guest posts.",
-        "Draft a link exchange outreach email to a local real estate agency."
+        "Draft a link exchange outreach email to a local real estate agency for nimbusroofing.com."
     ],
     social: [
-        "Create a week of LinkedIn posts about the benefits of Impact Resistant Shingles.",
-        "Write a Facebook post regarding the recent storm in McKinney, TX using urgency."
+        "Create a week of LinkedIn posts about GAF Master Elite status and its benefits.",
+        "Write a Facebook post regarding the recent storm in McKinney, TX with a CTA to schedule inspection."
     ]
   };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      setError('Please enter a topic.');
+      setError('Please enter a strategy goal.');
       return;
     }
 
@@ -46,15 +46,15 @@ const MarketAuthority: React.FC = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       
       let systemInstruction = "";
-      if (activeTab === 'content') systemInstruction = "Act as a Geo-Local SEO expert and Content Strategist.";
-      if (activeTab === 'backlinks') systemInstruction = "Act as an SEO Off-Page Specialist and Link Building Strategist. Focus on high domain authority opportunities.";
-      if (activeTab === 'social') systemInstruction = "Act as a Social Media Manager. Create engaging, platform-specific content.";
+      if (activeTab === 'content') systemInstruction = "Act as a Geo-Local SEO expert. Output must be indexable by Google/OpenAI.";
+      if (activeTab === 'backlinks') systemInstruction = "Act as an SEO Link Building Specialist. Focus on high domain authority opportunities for roofing contractors.";
+      if (activeTab === 'social') systemInstruction = "Act as a Social Media Manager. Create platform-specific task lists and captions.";
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: `${systemInstruction} ${prompt}`,
+        model: "gemini-3-flash-preview",
+        contents: `${systemInstruction} Context: nimbusroofing.com McKinney TX. Task: ${prompt}`,
         config: {
-             tools: [{ googleSearch: {} }, {googleMaps: {}}],
+             tools: [{ googleSearch: {} }],
         }
       });
 
@@ -62,7 +62,7 @@ const MarketAuthority: React.FC = () => {
       setSources(response.candidates?.[0]?.groundingMetadata?.groundingChunks || []);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-      setError(`Failed to generate content: ${errorMessage}`);
+      setError(`Strategy failure: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -71,49 +71,54 @@ const MarketAuthority: React.FC = () => {
   return (
     <div className="space-y-6">
       <Card>
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-700/50 bg-gray-800/50 rounded-t-xl px-2">
-            <div className="flex space-x-2 overflow-x-auto">
-                <button onClick={() => setActiveTab('content')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'content' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
-                    <SearchIcon className="w-4 h-4 mr-2"/> SEO Content
+        <div className="border-b border-gray-800 bg-gray-900/50 rounded-t-xl overflow-hidden">
+            <div className="flex overflow-x-auto no-scrollbar">
+                <button 
+                  onClick={() => setActiveTab('content')} 
+                  className={`flex items-center gap-2 py-4 px-6 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'content' ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    <SearchIcon className="w-4 h-4"/> Authority Content
                 </button>
-                <button onClick={() => setActiveTab('backlinks')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'backlinks' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
-                    <LinkIcon className="w-4 h-4 mr-2"/> Backlink Exchange
+                <button 
+                  onClick={() => setActiveTab('backlinks')} 
+                  className={`flex items-center gap-2 py-4 px-6 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'backlinks' ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    <LinkIcon className="w-4 h-4"/> Link Exchange
                 </button>
-                <button onClick={() => setActiveTab('social')} className={`flex items-center py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'social' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
-                    <ShareIcon className="w-4 h-4 mr-2"/> Social Task Force
+                <button 
+                  onClick={() => setActiveTab('social')} 
+                  className={`flex items-center gap-2 py-4 px-6 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'social' ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    <ShareIcon className="w-4 h-4"/> Social Task Force
                 </button>
             </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-white capitalize">{activeTab.replace('-', ' ')} Strategy</h3>
-          <p className="text-sm text-gray-400">
-            {activeTab === 'content' && "Dominate local search rankings when severe weather hits."}
-            {activeTab === 'backlinks' && "Build domain authority through strategic link exchanges and guest posts."}
-            {activeTab === 'social' && "Automate your social media calendar with high-engagement posts."}
-          </p>
-          
-           <div className="flex flex-col gap-2">
-            {presets[activeTab].map((p, i) => (
-                <button key={i} onClick={() => setPrompt(p)} className="text-left text-sm bg-gray-800 hover:bg-gray-700 p-2 rounded border border-gray-600 text-gray-300">
-                    {p}
-                </button>
-            ))}
+        <div className="p-6 space-y-6">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Strategy Blueprint</label>
+            <div className="flex flex-wrap gap-2">
+              {presets[activeTab].map((p, i) => (
+                  <button key={i} onClick={() => setPrompt(p)} className="text-left text-xs bg-gray-800/80 hover:bg-gray-800 p-3 rounded-lg border border-gray-700 text-gray-400 transition-all hover:border-indigo-500/30 max-w-sm">
+                      {p}
+                  </button>
+              ))}
+            </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Custom Directive</label>
             <textarea
-              rows={4}
+              rows={3}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your goal..."
-              className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="Enter strategy objectives..."
+              className="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
           <div className="flex justify-end">
             <Button onClick={handleGenerate} isLoading={isLoading}>
-              Execute Strategy
+              Execute Global SEO Task
             </Button>
           </div>
         </div>
@@ -122,25 +127,39 @@ const MarketAuthority: React.FC = () => {
       {(isLoading || result || error) && (
         <Card>
           <div className="p-6">
-            <h3 className="text-lg font-semibold mb-2">Strategy Output</h3>
-            {isLoading && <div className="flex justify-center p-8"><Spinner /></div>}
-            {error && <p className="text-red-400">{error}</p>}
-            {result && <div className="prose prose-invert max-w-none whitespace-pre-wrap">{result}</div>}
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-extrabold text-white">Strategy Output</h3>
+              {isLoading && <Spinner />}
+            </div>
+            
+            {error && <p className="text-red-400 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">{error}</p>}
+            
+            {result && (
+               <div className="prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-white leading-relaxed">
+                 <div className="p-6 bg-gray-900/50 rounded-2xl border border-gray-800 whitespace-pre-wrap font-sans">
+                   {result}
+                 </div>
+               </div>
+            )}
             
             {sources.length > 0 && (
-                <div className="mt-6 p-4 bg-gray-900/50 rounded-lg">
-                    <h4 className="font-semibold mb-2 text-gray-300 text-sm uppercase tracking-wider">Verified Sources</h4>
-                    <ul className="text-sm space-y-2">
+                <div className="mt-8 p-6 bg-indigo-900/10 rounded-2xl border border-indigo-500/20">
+                    <h4 className="font-bold mb-4 text-indigo-400 text-sm uppercase tracking-widest flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4" /> Market Grounding Sources
+                    </h4>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {sources.map((chunk, index) => {
                              const web = chunk.web;
-                             const maps = chunk.maps;
-                             const sourceUri = web?.uri || maps?.uri;
-                             const sourceTitle = web?.title || (maps as any)?.title || sourceUri;
+                             const sourceUri = web?.uri;
+                             const sourceTitle = web?.title || sourceUri;
  
                              if (!sourceUri) return null;
                              return (
-                                 <li key={index}>
-                                     <a href={sourceUri} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline truncate block">{sourceTitle}</a>
+                                 <li key={index} className="truncate">
+                                     <a href={sourceUri} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-indigo-400 transition-colors flex items-center gap-2">
+                                       <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                       {sourceTitle}
+                                     </a>
                                  </li>
                              );
                         })}

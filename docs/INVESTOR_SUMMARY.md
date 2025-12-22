@@ -1,15 +1,15 @@
 
-# Nimbus IQ AI Research Lab: Executive Investor Summary
+# Nimbus Roofing AI Research Lab: Executive Investor Summary
 
 **Date:** May 2025  
 **Stage:** Seed / Early Growth  
-**Website:** www.nimbusiq.ai  
-**Contact:** dustin@nimbusiq.ai  
+**Website:** www.nimbusroofing.com  
+**Contact:** dustin@nimbusroofing.com  
 
 ---
 
 ## 1. Company Overview
-Nimbus IQ is a **vertical SaaS** company building the "Autonomous Operating System" for the $156B Roofing & Restoration industry. We replace fragmented, manual legacy workflows with a unified platform powered by **Sovereign AI Agents**.
+Nimbus Roofing AI is a **vertical SaaS** company building the "Autonomous Operating System" for the $156B Roofing & Restoration industry. We replace fragmented, manual legacy workflows with a unified platform powered by **Sovereign AI Agents**.
 
 Our mission is to move construction companies from "manually managed" to "autonomously executed" by deploying AI that can see (Vision), think (Reasoning), and act (Tools).
 
@@ -19,7 +19,7 @@ The restoration industry loses **$3.2 Billion annually** due to administrative i
 *   **Claims Leakage:** Contractors fail to document code requirements, leaving ~18% of claim value on the table.
 *   **Labor Shortage:** High turnover in project management and sales roles creates operational bottlenecks.
 
-## 3. The Solution: RoofAI Pro
+## 3. The Solution: Nimbus Roofing AI OS
 A unified "Super App" built on Google Cloud Vertex AI that automates the four core business pillars:
 
 1.  **Acquisition (Market Authority):** "Zero-Click" generative SEO that auto-publishes storm guides to capture traffic.

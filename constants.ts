@@ -1,84 +1,58 @@
 
 import type { Tool } from './types';
-import { SparklesIcon, MessageSquareIcon, ImageIcon, SearchIcon, MicIcon, VideoIcon, BotIcon, OpenAIIcon, UsersIcon, ShieldIcon, InfoIcon, FileCodeIcon, TableIcon } from './components/Icons';
+import { 
+  SparklesIcon, MessageSquareIcon, ImageIcon, SearchIcon, MicIcon, VideoIcon, 
+  BotIcon, OpenAIIcon, UsersIcon, ShieldIcon, InfoIcon, FileCodeIcon, 
+  TableIcon, FileTextIcon, PhoneIcon, CPUIcon 
+} from './components/Icons';
 
 export const TOOLS: Tool[] = [
   {
-    id: 'xactimate-bridge',
-    name: 'Compliance Engine (MVP)',
-    description: 'The 1-2-3 Solution: Generate a revised, code-compliant estimate for the carrier.',
+    id: 'kpi-dashboard',
+    name: 'Sniper Intelligence',
+    description: 'Precision tracking of claim lift and forensic ROI. The Accountant Sniper\'s financial HUD.',
+    icon: CPUIcon,
+  },
+  {
+    id: 'fraud-detection',
+    name: 'Fraud Sentinel',
+    description: 'Forensic analysis of carrier denial tactics. Identifying missing items and suspicious narrative patterns.',
     icon: ShieldIcon,
   },
   {
-    id: 'crm-suite',
-    name: 'Sheetify CRM',
-    description: 'Automated Lead & Project Tracker powered by Nimbus Brain.',
-    icon: TableIcon,
-  },
-  {
-    id: 'market-authority',
-    name: 'Market Authority',
-    description: 'SEO Content, Backlink Exchange & Social Media Task Force.',
-    icon: SearchIcon,
-  },
-  {
-    id: 'command-center',
-    name: 'Command Center',
-    description: 'Real-Time Decision Engine updating every 8 seconds for strategic oversight.',
-    icon: MessageSquareIcon,
-  },
-  {
-    id: 'claims-intelligence',
-    name: 'Claims Intelligence',
-    description: 'Find missing supplements ($4,200 avg) and audit Activity Codes.',
-    icon: SparklesIcon,
-  },
-  {
-    id: 'adk-workbench',
-    name: 'ADK Workbench',
-    description: 'Manage your specialized agent swarm (Inspectors, Claims, Support).',
-    icon: UsersIcon,
-  },
-  {
-    id: 'roof-inspector',
-    name: 'Roof Inspector',
-    description: 'AR Roof Scans and 99.7% accurate damage analysis from imagery.',
-    icon: ImageIcon,
-  },
-  {
-    id: 'paperwork-scanner',
-    name: 'Paperwork Scanner',
-    description: 'Ingest policies and estimates using Document AI technology.',
-    icon: OpenAIIcon, 
-  },
-  {
-    id: 'security-ops',
-    name: 'Security Foundations',
-    description: 'Infrastructure Blueprint & Security Operations Center.',
+    id: 'xactimate-bridge',
+    name: 'Forensic XML Bridge',
+    description: 'Validating Xactimate ESX against IBC 2021 with the precision of a field-forward engineer.',
     icon: FileCodeIcon,
   },
   {
+    id: 'roof-inspector',
+    name: 'Vision Lab',
+    description: 'Spatial forensic analysis and hail triangulation. Integrated with Nimbus Voice AI for on-site feedback.',
+    icon: ImageIcon,
+  },
+  {
+    id: 'crm-suite',
+    name: 'Sheetify SEO-CRM',
+    description: 'Market-grounded operating system for roofing. Dominating the DFW hail track autonomously.',
+    icon: TableIcon,
+  },
+  {
+    id: 'adk-workbench',
+    name: 'IQ Swarm Hub',
+    description: 'Agent-to-Agent terminal. Orchestrating Cloud Run micro-agents for field-forward operations.',
+    icon: UsersIcon,
+  },
+  {
     id: 'emergency-response',
-    name: 'Emergency Response',
-    description: 'Rapid mobilization coordinator with real-time voice interface.',
-    icon: BotIcon,
+    name: 'Smart IQ Voice',
+    description: 'Low-latency intake at +1 972-IQ-NIMBUS. The voice link between customer and lab.',
+    icon: PhoneIcon,
   },
   {
-    id: 'site-surveillance',
-    name: 'Site Surveillance',
-    description: 'Monitor job sites and analyze footage for safety and progress.',
-    icon: VideoIcon,
-  },
-  {
-    id: 'customer-service',
-    name: 'Customer Service',
-    description: 'Automated 24/7 lead qualification and support bot.',
-    icon: MicIcon,
-  },
-  {
-    id: 'about',
-    name: 'About Us',
-    description: 'Investor Relations: Mission, Market, and Technology Stack.',
+    id: 'company-profile',
+    name: 'Research Lab',
+    description: 'Cloud Run architecture, Accountant Sniper thesis, and Dustin Moore\'s forensic roadmap.',
     icon: InfoIcon,
   },
 ];

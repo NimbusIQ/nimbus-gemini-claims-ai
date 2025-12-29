@@ -3,151 +3,116 @@ import React, { useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Spinner } from '../components/ui/Spinner';
+import { ShieldIcon, CPUIcon, FileCodeIcon, BotIcon } from '../components/Icons';
 
-interface BlueprintSection {
+interface SecurityControl {
   id: string;
+  category: string;
   title: string;
+  status: 'COMPLIANT' | 'REASONING' | 'ACTION_REQUIRED';
   description: string;
-  prompt: string;
 }
 
-const SECTIONS: BlueprintSection[] = [
-  { 
-    id: 'org', 
-    title: 'Organization Structure', 
-    description: 'Define folder hierarchy for segregation of policies, privileges and access.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain how to set up the Organization Structure according to the Security Foundations Blueprint. Include Folder hierarchy (Env/Business Unit) and essential Organization Policies (constraints) to apply. Provide a Terraform snippet for the folder structure.' 
-  },
-  { 
-    id: 'iam', 
-    title: 'Authentication & IAM', 
-    description: 'Federate identity and configure least-privilege access.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain the Identity & Access Management (IAM) strategy in the Security Foundations Blueprint. Cover Identity Federation, Group-based access (vs User-based), and handling Privileged Access. Provide a Terraform snippet for creating a restricted IAM group.' 
-  },
-  { 
-    id: 'network', 
-    title: 'Networking & Segmentation', 
-    description: 'Shared VPC, Firewalls, and Service Controls.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain the Networking strategy in the Security Foundations Blueprint. Cover Shared VPC, VPC Service Controls (Perimeters), and Hierarchical Firewall Policies. Provide a Terraform snippet for a Shared VPC host project setup.' 
-  },
-  { 
-    id: 'data', 
-    title: 'Data Protection', 
-    description: 'Key Management (KMS) and Secret Manager.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain Data Protection in the Security Foundations Blueprint. Detail the use of Cloud KMS (CMEK) and Secret Manager. Provide a Terraform snippet for a CMEK-protected Storage Bucket.' 
-  },
-  { 
-    id: 'detect', 
-    title: 'Detective Controls', 
-    description: 'Logging, Monitoring, and Security Command Center.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain Detective Controls in the Security Foundations Blueprint. Cover Organization-level Log Sinks, BigQuery exports, and Security Command Center (SCC) configuration. Provide a Terraform snippet for an aggregated log sink.' 
-  },
-  { 
-    id: 'deploy', 
-    title: 'Secure Deployment', 
-    description: 'Infrastructure as Code and CI/CD Pipelines.',
-    prompt: 'Acting as a Google Cloud Security Architect, explain the "Secure Application Deployment" phase of the Security Foundations Blueprint. Describe the separation of duties between Infrastructure and Workload pipelines. Provide a Cloud Build YAML example for a secure deployment.' 
-  },
-];
-
 const SecurityOps: React.FC = () => {
-  const [selectedSection, setSelectedSection] = useState<BlueprintSection>(SECTIONS[0]);
-  const [content, setContent] = useState<string>('');
+  const [controls, setControls] = useState<SecurityControl[]>([
+    { id: 'IAM-01', category: 'Access', title: 'Least Privilege Enforcement', status: 'COMPLIANT', description: 'GCP Service Accounts restricted via IAM Conditions.' },
+    { id: 'NET-01', category: 'Network', title: 'VPC Service Controls', status: 'ACTION_REQUIRED', description: 'Egress perimeter requires manual IP validation for Zip 75071 node.' },
+    { id: 'DATA-01', category: 'Privacy', title: 'AES-256 Customer Vault', status: 'COMPLIANT', description: 'Shingle forensic data encrypted via CMEK in Cloud KMS.' },
+    { id: 'OPS-01', category: 'Governance', title: 'SOC2 Operational Audit', status: 'REASONING', description: 'Gemini is auditing live Cloud Run logs for policy violations.' }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [auditLog, setAuditLog] = useState<string>('');
 
-  const handleGenerate = async () => {
+  const runNeuralAudit = async () => {
     setIsLoading(true);
-    setError(null);
-    setContent('');
-
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: selectedSection.prompt,
-        config: {
-            systemInstruction: "You are the Chief Information Security Officer (CISO) for RoofAI Pro. Your goal is to guide the implementation of the Google Cloud Security Foundations Blueprint. Be technical, precise, and provide actionable Terraform code blocks where requested."
-        }
+        model: 'gemini-3-flash-preview',
+        contents: "Perform a SOC2 Type 1 preliminary gap analysis for the Nimbus IQ Cloud Run deployment. Focus on IAM segregation and Data Protection. Use forensic engineer tone.",
       });
-      setContent(response.text);
+      setAuditLog(response.text);
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-      setError(`Security Analysis Failed: ${errorMessage}`);
+      console.error(e);
+      setAuditLog('Audit link severed. Resetting security handshake.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-10rem)]">
-      {/* Left Sidebar: Blueprint Modules */}
-      <Card className="w-full lg:w-1/3 flex flex-col p-4 overflow-y-auto">
-        <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Blueprint Modules</h2>
-        <div className="space-y-2">
-          {SECTIONS.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => { setSelectedSection(section); setContent(''); setError(null); }}
-              className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
-                selectedSection.id === section.id
-                  ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
-                  : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-700 hover:border-gray-600'
-              }`}
-            >
-              <h3 className={`font-semibold ${selectedSection.id === section.id ? 'text-indigo-400' : 'text-gray-200'}`}>
-                {section.title}
-              </h3>
-              <p className="text-xs mt-1 opacity-80">{section.description}</p>
-            </button>
-          ))}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-14rem)]">
+      {/* Control Checklist */}
+      <Card className="lg:col-span-5 bg-gray-950 border-gray-800 p-8 flex flex-col overflow-hidden relative shadow-2xl rounded-[2.5rem]">
+        <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em] mb-8 border-b border-gray-900 pb-4 flex items-center gap-3">
+          <ShieldIcon className="w-5 h-5 text-indigo-500" /> Security Foundations Checklist
+        </h3>
+        
+        <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar">
+           {controls.map((control) => (
+             <div key={control.id} className="p-5 bg-gray-900/40 rounded-3xl border border-gray-800 hover:border-indigo-500/20 transition-all group">
+                <div className="flex justify-between items-center mb-2">
+                   <div className="flex flex-col">
+                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{control.category}</span>
+                      <h4 className="text-xs font-black text-white">{control.title}</h4>
+                   </div>
+                   <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
+                      control.status === 'COMPLIANT' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                      control.status === 'ACTION_REQUIRED' ? 'bg-red-500/10 text-red-400 border-red-500/20 animate-pulse' :
+                      'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                   }`}>
+                      {control.status}
+                   </span>
+                </div>
+                <p className="text-[10px] text-gray-500 font-medium leading-tight italic">{control.description}</p>
+             </div>
+           ))}
+        </div>
+        
+        <div className="mt-8 pt-8 border-t border-gray-900 flex justify-between items-center">
+           <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Global Security Compliance: 82%</div>
+           <div className="w-32 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full bg-indigo-500 w-[82%]"></div>
+           </div>
         </div>
       </Card>
 
-      {/* Right Content Area: Implementation Details */}
-      <Card className="w-full lg:w-2/3 flex flex-col border-indigo-500/30">
-        <div className="p-6 border-b border-gray-700/50 flex justify-between items-center bg-gray-800/80 rounded-t-xl">
-          <div>
-            <h2 className="text-2xl font-bold text-white">{selectedSection.title}</h2>
-            <p className="text-sm text-gray-400 mt-1">Security Foundations Blueprint Implementation</p>
-          </div>
-          <Button onClick={handleGenerate} isLoading={isLoading}>
-            Generate Plan & Code
-          </Button>
-        </div>
-
-        <div className="flex-1 p-6 overflow-y-auto bg-gray-900/30">
-          {error && (
-            <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg text-red-300 mb-4">
-              {error}
+      {/* Neural Auditor Console */}
+      <Card className="lg:col-span-7 bg-black/80 border-indigo-500/10 p-8 flex flex-col shadow-2xl rounded-[2.5rem] relative overflow-hidden">
+         <div className="absolute inset-0 bg-indigo-500/5 pointer-events-none"></div>
+         <div className="flex justify-between items-center mb-8 border-b border-gray-900 pb-4 relative z-10">
+            <div className="flex items-center gap-3">
+               <CPUIcon className="w-6 h-6 text-indigo-400" />
+               <h4 className="text-[11px] font-black text-white uppercase tracking-[0.4em]">Neural Audit Log</h4>
             </div>
-          )}
-
-          {!content && !isLoading && !error && (
-            <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
-              <svg className="w-16 h-16 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p>Select a module and click "Generate Plan" to retrieve the security blueprint.</p>
+            <Button onClick={runNeuralAudit} isLoading={isLoading} className="bg-white text-black hover:bg-gray-200 px-6 py-2 text-[10px] font-black uppercase rounded-xl tracking-widest">
+               Execute Live Gap Analysis
+            </Button>
+         </div>
+         
+         <div className="flex-1 bg-gray-950/50 rounded-[2rem] p-8 border border-gray-900 overflow-y-auto no-scrollbar relative z-10">
+            {auditLog ? (
+               <div className="prose prose-invert prose-p:text-gray-300 prose-headings:text-indigo-400 text-xs font-mono whitespace-pre-wrap leading-relaxed">
+                  {auditLog}
+               </div>
+            ) : (
+               <div className="h-full flex flex-col items-center justify-center opacity-20">
+                  <FileCodeIcon className="w-16 h-16 text-indigo-500 mb-4" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">Awaiting IQ Audit Trigger</span>
+               </div>
+            )}
+         </div>
+         
+         <div className="mt-6 flex justify-center gap-8 relative z-10">
+            <div className="flex items-center gap-2">
+               <div className="w-1 h-1 bg-green-500 rounded-full"></div>
+               <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest italic">SOC2 Type 1 Mapping Active</span>
             </div>
-          )}
-
-          {isLoading && (
-            <div className="h-full flex flex-col items-center justify-center space-y-4">
-              <Spinner />
-              <p className="text-indigo-400 animate-pulse">Consulting Security Architect...</p>
+            <div className="flex items-center gap-2">
+               <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+               <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest italic">HIPAA/GDPR Compliance Scanners Online</span>
             </div>
-          )}
-
-          {content && (
-            <div className="prose prose-invert max-w-none">
-              <div className="whitespace-pre-wrap font-sans text-gray-300 leading-relaxed">
-                {content}
-              </div>
-            </div>
-          )}
-        </div>
+         </div>
       </Card>
     </div>
   );

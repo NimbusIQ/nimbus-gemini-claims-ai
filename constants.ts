@@ -3,56 +3,50 @@ import type { Tool } from './types';
 import { 
   SparklesIcon, MessageSquareIcon, ImageIcon, SearchIcon, MicIcon, VideoIcon, 
   BotIcon, OpenAIIcon, UsersIcon, ShieldIcon, InfoIcon, FileCodeIcon, 
-  TableIcon, FileTextIcon, PhoneIcon, CPUIcon 
+  TableIcon, FileTextIcon, PhoneIcon, CPUIcon, CubeIcon 
 } from './components/Icons';
 
 export const TOOLS: Tool[] = [
   {
     id: 'kpi-dashboard',
-    name: 'Sniper Intelligence',
-    description: 'Precision tracking of claim lift and forensic ROI. The Accountant Sniper\'s financial HUD.',
+    name: 'Sovereign HUD',
+    description: 'High-fidelity telemetry of the IQ Swarm and tokenized construction assets.',
     icon: CPUIcon,
-  },
-  {
-    id: 'fraud-detection',
-    name: 'Fraud Sentinel',
-    description: 'Forensic analysis of carrier denial tactics. Identifying missing items and suspicious narrative patterns.',
-    icon: ShieldIcon,
-  },
-  {
-    id: 'xactimate-bridge',
-    name: 'Forensic XML Bridge',
-    description: 'Validating Xactimate ESX against IBC 2021 with the precision of a field-forward engineer.',
-    icon: FileCodeIcon,
-  },
-  {
-    id: 'roof-inspector',
-    name: 'Vision Lab',
-    description: 'Spatial forensic analysis and hail triangulation. Integrated with Nimbus Voice AI for on-site feedback.',
-    icon: ImageIcon,
-  },
-  {
-    id: 'crm-suite',
-    name: 'Sheetify SEO-CRM',
-    description: 'Market-grounded operating system for roofing. Dominating the DFW hail track autonomously.',
-    icon: TableIcon,
   },
   {
     id: 'adk-workbench',
     name: 'IQ Swarm Hub',
-    description: 'Agent-to-Agent terminal. Orchestrating Cloud Run micro-agents for field-forward operations.',
+    description: 'Lethal Agent-to-Agent orchestration for autonomous asset management.',
     icon: UsersIcon,
   },
   {
-    id: 'emergency-response',
-    name: 'Smart IQ Voice',
-    description: 'Low-latency intake at +1 972-IQ-NIMBUS. The voice link between customer and lab.',
-    icon: PhoneIcon,
+    id: 'xactimate-bridge',
+    name: 'Forensic Lab',
+    description: 'Sovereign ESX XML validation against IBC 2021 protocols. Accountant Sniper mode.',
+    icon: FileCodeIcon,
+  },
+  {
+    id: 'token-vault',
+    name: 'Asset Vault',
+    description: 'Secure tokenization of deeds, warranties, and construction liens on Google Blockchain.',
+    icon: CubeIcon,
+  },
+  {
+    id: 'fraud-detection',
+    name: 'Fraud Sentinel',
+    description: 'Forensic scan of carrier denial tactics. Identifying missing revenue and narrative gaps.',
+    icon: ShieldIcon,
+  },
+  {
+    id: 'security-ops',
+    name: 'SOC Security',
+    description: 'Google Cloud Security Foundations and SOC2 operational compliance cockpit.',
+    icon: ShieldIcon,
   },
   {
     id: 'company-profile',
     name: 'Research Lab',
-    description: 'Cloud Run architecture, Accountant Sniper thesis, and Dustin Moore\'s forensic roadmap.',
+    description: 'The Accountant Sniper thesis and Dustin Moore\'s sovereign roadmap.',
     icon: InfoIcon,
   },
 ];
